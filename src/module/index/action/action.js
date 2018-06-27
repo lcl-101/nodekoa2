@@ -16,7 +16,7 @@ function receivePostes(json){
 }
 function fetchPosts(){
   return function(dispatch){
-    return fetch(url+owner+'/'+repo+'/'+'issues')
+    return fetch('/api/getList')
       .then(respones => respones.json())
       .then(json => dispatch(receivePostes(json)))
   }
@@ -53,8 +53,11 @@ function receiveComments(id,json){
   }
 }
 function fetchComments(id){
+  var opts = {
+    mode: "cors"
+  }
   return function(dispatch){
-    return fetch(url+owner+'/'+repo+'/'+'issues/'+id+'/comments')
+    return fetch(url+owner+'/'+repo+'/'+'issues/'+id+'/comments',opts)
       .then(respones => respones.json())
       .then(json => dispatch(receiveComments(id,json)))
   }
@@ -86,12 +89,7 @@ function receiveLogin(json){
 }
 function fetchLogin(code){
   var opts = {
-    method:"GET",
-    mode: "cors",
-    credentials: 'include',
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
+    mode: "cors"
   }
   return function(dispatch){
     return fetch(lUrl+'?client_id='+client_id+'&client_secret='+client_secret+'&code='+code,opts)
