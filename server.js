@@ -38,6 +38,11 @@ var app = express();
 var cors = require('cors')
 var server = require('http').createServer(app);
 var Axios = require('axios');
+var redis = require('redis');
+var schedule = require('node-schedule');
+
+//链接redis服务器;
+const client = redis.createClient('6379', '127.0.0.1');
 
 app.use(cors());
 
@@ -166,20 +171,55 @@ function handlers(req,res){
   routeHandler(pathName, req, res);
 }
 
+function getList(res){
+  Axios.get('https://api.github.com/repos/lcl-101/webpack-blog/issues?client_id=149613f6b828472ab126&client_secret=c003cfeeafa97ca0f4c756aab3c2051447ddaab7')
+    .then(function(data){
+      if(data.status == 200){
+        client.set('getList', JSON.stringify(data.data));
+        if(res){
+          res.send(data.data);
+        }
+      }else {
+        if(res){
+          res.send('');
+        }
+      }
+    }).catch(function (error) {
+      if(res){
+        res.send(error);
+      }
+    });
+}
+
 /**
  * 接口
  */
 app.get('/api/getList', function(req,res){
-  Axios.get('https://api.github.com/repos/lcl-101/webpack-blog/issues?client_id=149613f6b828472ab126&client_secret=c003cfeeafa97ca0f4c756aab3c2051447ddaab7')
-    .then(function(data){
-      if(data.status == 200){
-        res.send(data.data);
-      }else {
-        res.send('');
-      }
-    }).catch(function (error) {
-      res.send(error);
-    });
+  client.get('getList', function(err, value){
+    if(!value) {
+      getList(res);
+    }else {
+      res.send(value);
+    }
+  })
+  return;
 })
+
+//定时任务
+function scheduleCronstyle(){
+  schedule.scheduleJob('30 1 * * * *', function(){
+    getList();
+  });
+}
+
+scheduleCronstyle();
+
+//test redis
+client.set('hello', {a:1, b:2}) // 注意，value会被转为字符串,所以存的时候要先把value 转为json字符串
+client.get('hello', function(err, value){
+  console.log(value)
+  console.log(err)
+})
+
 
 server.listen(3000);
